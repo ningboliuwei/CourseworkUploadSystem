@@ -1,15 +1,20 @@
-﻿using System;
-using System.Collections;
+﻿#region
+
+using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text;
-using System.Text.RegularExpressions;
 using System.Web.UI;
+
+#endregion
 
 public partial class _Default : Page
 {
 	private static string pageTitle = "";
-	private static ArrayList studentListArray = new ArrayList();
 	private static string uploadDirectoryStr = "";
+	private static List<CourseworkInfo> courseworkList = new List<CourseworkInfo>();
+	private static List<StudentInfo> studentList = new List<StudentInfo>();
 
 	protected void Page_Load(object sender, EventArgs e)
 	{
@@ -17,73 +22,106 @@ public partial class _Default : Page
 		EnableViewState = true;
 		Title = pageTitle;
 
-		StreamReader sr = null;
 
 		if (Page.IsPostBack != true)
 		{
-			try
+			LoadConfig();
+		}
+		SetUploadEnabled();
+	}
+
+	private void LoadConfig()
+	{
+		courseworkList.Clear();
+		studentList.Clear();
+
+		StreamReader sr = null;
+
+		try
+		{
+			sr = new StreamReader(Server.MapPath("config.txt"), Encoding.Default);
+
+			string currentLine = "";
+
+			dplCourseworkName.Items.Clear();
+
+			while ((currentLine = sr.ReadLine()) != null)
 			{
-				sr = new StreamReader(Server.MapPath("config.txt"), Encoding.Default);
-
-				string currentLine = "";
-
-				dplCourseworkName.Items.Clear();
-
-				while ((currentLine = sr.ReadLine()) != null)
+				if (currentLine == "[Title]")
 				{
-					if (currentLine == "[Title]")
-					{
-						lblTitle.Text = sr.ReadLine().Trim();
-						pageTitle = lblTitle.Text;
-					}
-					else if (currentLine == "[Notice Info]")
-					{
-						lblNotice.Text = sr.ReadLine().Trim();
-					}
-					else if (currentLine == "[Upload Directory]")
-					{
-						uploadDirectoryStr = sr.ReadLine().Trim();
-					}
-					else if (currentLine == "[Student List]")
-					{
-						string studentRecordStr = "";
+					lblTitle.Text = sr.ReadLine().Trim();
+					pageTitle = lblTitle.Text;
+				}
+				else if (currentLine == "[Notice Info]")
+				{
+					lblNotice.Text = sr.ReadLine().Trim();
+				}
+				else if (currentLine == "[Upload Directory]")
+				{
+					uploadDirectoryStr = sr.ReadLine().Trim();
+				}
+				else if (currentLine == "[Student List]")
+				{
+					string studentRecordStr = "";
 
-						while (studentRecordStr != "[Coursework List]")
+					while (studentRecordStr != "[Coursework List]")
+					{
+						studentRecordStr = sr.ReadLine().Trim();
+
+						if (studentRecordStr != "[Coursework List]")
 						{
-							studentRecordStr = sr.ReadLine().Trim();
-							string[] studentRecord = new string[2];
-							if (studentRecordStr != "[Coursework List]")
-							{
-								studentRecord = studentRecordStr.Split(',');
-								studentListArray.Add(studentRecord);
-							}
+							studentList.Add(new StudentInfo { Sno = studentRecordStr.Split(',')[0], Name = studentRecordStr.Split(',')[1] });
 						}
+					}
 
-						dplCourseworkName.Items.Add(sr.ReadLine().Trim());
-					}
-					else
+					string[] a = sr.ReadLine().Trim().Split(',');
+
+					CourseworkInfo latestCoursework = new CourseworkInfo
 					{
-						dplCourseworkName.Items.Add(currentLine);
-					}
+						ID = a[0],
+						Name = a[1],
+						PublishTime = Convert.ToDateTime(a[2]),
+						DaysBeforeDeadline = Convert.ToInt32(a[3])
+					};
+					courseworkList.Add(latestCoursework);
+
+					dplCourseworkName.Items.Add(string.Format("【{0}】 {1} (发布时间:{2}, 期限(天):{3})", latestCoursework.ID,
+						latestCoursework.Name, latestCoursework.PublishTime.ToString("yyyy-MM-dd"), latestCoursework.DaysBeforeDeadline));
 				}
-			}
-			catch (Exception ex)
-			{
-				lblNotice.Text = "加载本页面出错，请稍候再试。具体错误如下：<br>" + ex.Message;
-			}
-			finally
-			{
-				if (sr != null)
+				else
 				{
-					sr.Close();
+					string[] a = currentLine.Split(',');
+
+					CourseworkInfo latestCoursework = new CourseworkInfo
+					{
+						ID = a[0],
+						Name = a[1],
+						PublishTime = Convert.ToDateTime(a[2]),
+						DaysBeforeDeadline = Convert.ToInt32(a[3])
+					};
+					courseworkList.Add(latestCoursework);
+					//dplCourseworkName.Items.Add(latestCoursework.Name);
+					dplCourseworkName.Items.Add(string.Format("【{0}】 {1} (发布时间:{2}, 期限(天):{3})", latestCoursework.ID,
+						latestCoursework.Name, latestCoursework.PublishTime.ToString("yyyy-MM-dd"), latestCoursework.DaysBeforeDeadline));
 				}
+			}
+		}
+		catch (Exception ex)
+		{
+			lblNotice.Text = "加载本页面出错，请稍候再试。具体错误如下：<br>" + ex.Message;
+		}
+		finally
+		{
+			if (sr != null)
+			{
+				sr.Close();
 			}
 		}
 	}
 
 	protected void btnSubmit_Click(object sender, EventArgs e)
 	{
-		if (ValidateInput("upload") == true)
+		if (ValidateInput("upload"))
 		{
 			UploadFile();
 		}
@@ -96,27 +134,33 @@ public partial class _Default : Page
 		string destFilePath = "";
 		string destDirPath = "";
 
-        string path = Server.MapPath("Images\\");
-        string filename = "";
-        int slashPos = -1;
-        int dotPos = -1;
-        string shortName = "";
-        string fileType = "";
+		string path = Server.MapPath("Images\\");
+		string filename = "";
+		int slashPos = -1;
+		int dotPos = -1;
+		string shortName = "";
+		string fileType = "";
 
-        filename = fupFile.PostedFile.FileName;
-        slashPos = filename.LastIndexOf("\\");
-        dotPos = filename.LastIndexOf(".");
-        shortName = filename.Substring(slashPos + 1);
-        fileType = filename.Substring(dotPos + 1);
+		filename = fupFile.PostedFile.FileName;
+		slashPos = filename.LastIndexOf("\\");
+		dotPos = filename.LastIndexOf(".");
+		shortName = filename.Substring(slashPos + 1);
+		fileType = filename.Substring(dotPos + 1);
 
 		StreamWriter sw = null;
 
 		try
 		{
-			destFilePath = studentID + "+" + studentName + "+" + DateTime.Now.ToString("yyyy'年'MM'月'dd'日' HH'点'mm'分'ss'秒'") +
-			               "." + fileType;
-			destDirPath = Server.MapPath("") + uploadDirectoryStr + dplCourseworkName.SelectedValue + "\\" + studentID + "+" +
-			              studentName + "\\";
+			string currentID = GetCourseworkID(dplCourseworkName.Text);
+
+			CourseworkInfo currentCoursework = courseworkList.Find(c => c.ID == currentID);
+
+
+
+			destFilePath = currentCoursework.ID + "+" + currentCoursework.Name + "+" + DateTime.Now.ToString("yyyyMMddHHmmss") + "+" + studentID + studentName +
+						   "." + fileType;
+			destDirPath = Server.MapPath("") + uploadDirectoryStr + currentCoursework.ID + "+" + currentCoursework.Name + "\\";
+
 
 
 			if (Directory.Exists(destDirPath) == false)
@@ -128,8 +172,8 @@ public partial class _Default : Page
 			fupFile.SaveAs(destDirPath + destFilePath);
 
 			sw = new StreamWriter(Server.MapPath("uploadhistory.txt"), true, Encoding.Default);
-			sw.WriteLine(destFilePath + "," + dplCourseworkName.SelectedValue + "," + DateTime.Now.ToString() + "," +
-			             Request.ServerVariables.Get("Remote_Addr").ToString());
+			sw.WriteLine(destFilePath + "," + DateTime.Now + "," +
+						 Request.ServerVariables.Get("Remote_Addr"));
 			sw.Close();
 
 			lblNotice.Text = "上传文件成功，文件名为\"" + destFilePath + "\"。若想进一步确认，请点击\"查看我已经提交的所有文件\"进行查看。";
@@ -160,12 +204,14 @@ public partial class _Default : Page
 		string[] studentRecordArray;
 		bool foundStudentID = false;
 
-		for (int i = 0; i < studentListArray.Count; i++)
+		for (int i = 0; i < studentList.Count; i++)
 		{
-			studentRecordArray = (string[]) studentListArray[i];
-			if (studentRecordArray[0] == studentID)
+			//studentRecordArray = (string[])studentList[i];
+			//if (studentRecordArray[0] == studentID)
+			if (studentList[i].Sno == studentID)
 			{
-				txtStudentName.Text = studentRecordArray[1];
+				//txtStudentName.Text = studentRecordArray[1];
+				txtStudentName.Text = studentList[i].Name;
 				foundStudentID = true;
 				break;
 			}
@@ -179,24 +225,23 @@ public partial class _Default : Page
 			lkbViewFiles.Enabled = false;
 			return false;
 		}
-		else
-		{
-			lblNotice.Text = "注意！请在提交作业前仔细核对学号，姓名与所属的作业名称，错误的输入会导致文件提交到错误的位置。";
+		lblNotice.Text = "注意！请在提交作业前仔细核对学号，姓名与所属的作业名称，错误的输入会导致文件提交到错误的位置。";
 
-			btnSubmit.Enabled = true;
-			lkbViewFiles.Enabled = true;
-			return true;
-		}
+		btnSubmit.Enabled = true;
+		lkbViewFiles.Enabled = true;
+		return true;
 	}
 
 	protected void txtStudentID_TextChanged(object sender, EventArgs e)
 	{
+		LoadConfig();
 		AutoGetStudentName();
+		SetUploadEnabled();
 	}
 
 	protected void lkbViewFiles_Click(object sender, EventArgs e)
 	{
-		if (ValidateInput("browsefile") == true)
+		if (ValidateInput("browsefile"))
 		{
 			Session["personalcategoryname"] = txtStudentID.Text.Trim() + "+" + txtStudentName.Text.Trim();
 			Session["uploaddirectory"] = Server.MapPath("") + uploadDirectoryStr;
@@ -253,9 +298,6 @@ public partial class _Default : Page
 					ifValid = true;
 				}
 			}
-			else
-			{
-			}
 
 			return ifValid;
 		}
@@ -263,6 +305,64 @@ public partial class _Default : Page
 		{
 			throw new Exception(ex.Message);
 		}
-		
+	}
+
+	public class CourseworkInfo
+	{
+		//ID
+
+		public string ID { get; set; }
+		//作业名称
+		public string Name { get; set; }
+
+		//作业发布时间
+		public DateTime PublishTime { get; set; }
+
+		//最长允许天数
+		public int DaysBeforeDeadline { get; set; }
+	}
+
+	public class StudentInfo
+	{
+		//学号
+		public string Sno { get; set; }
+
+		//姓名
+		public string Name { get; set; }
+	}
+	protected void dplCourseworkName_SelectedIndexChanged(object sender, EventArgs e)
+	{
+		SetUploadEnabled();
+	}
+
+	//设定是否允许提交
+	private void SetUploadEnabled()
+	{
+		var id = GetCourseworkID(dplCourseworkName.Text);
+
+		//lblUploadInfo.Text = id;
+
+		CourseworkInfo coursework = courseworkList.Where(c => c.ID == id).ToList()[0];
+
+		DateTime deadline = coursework.PublishTime.AddDays(coursework.DaysBeforeDeadline);
+
+		if (DateTime.Now > deadline.AddDays(1))
+		{
+			fupFile.Enabled = false;
+			lblUploadInfo.Text = string.Format("该作业最后期限为{0}，已不允许提交。", deadline.ToString("yyyy-MM-dd"));
+		}
+		else
+		{
+			fupFile.Enabled = true;
+			lblUploadInfo.Text = string.Format("该作业最后期限为{0}", deadline.ToString("yyyy-MM-dd"));
+		}
+	}
+
+	private static string GetCourseworkID(string s)
+	{
+		int startPos = s.IndexOf("【");
+		int endPos = s.IndexOf("】");
+
+		return s.Substring(startPos + 1, endPos - startPos - 1);
 	}
 }

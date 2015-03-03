@@ -4,13 +4,13 @@
 
 <html xmlns="http://www.w3.org/1999/xhtml" >
 <head runat="server">
-    <title>无标题页</title>
+	<title>无标题页</title>
 <script language="javascript" type="text/javascript">
 </script>
 </head>
 <body background="image/bg8.gif">
-    <form id="form1" runat="server">
- 		<div style="text-align: center; font-size: small; color: black; font-family: Verdana; background-attachment: fixed; background-image: url(image/bg8.gif);" >
+	<form id="form1" runat="server">
+		<div style="text-align: center; font-size: small; color: black; font-family: Verdana; background-attachment: fixed; background-image: url(image/bg8.gif);" >
 				<table style="border-right: maroon thin solid; border-top: maroon thin solid; border-left: maroon thin solid; border-bottom: maroon thin solid; background-attachment: fixed; height: 90%; font-size: 14px;" id="TABLE1"  border = "1" align="center" width="700" cellspacing="0" >
 					<tr>
 						<td colspan="2" style="height: 100px; text-align: center;"  valign="middle" width="100%" >
@@ -36,14 +36,15 @@
 						<td style="width: 267px; text-align: center">
 							作业名称（请选择要提交的文件所属的作业名称）</td>
 						<td style="width: 100px; text-align: left">
-							<asp:DropDownList ID="dplCourseworkName" runat="server" Width="312px" TabIndex="3">
+							<asp:DropDownList ID="dplCourseworkName" runat="server" Width="390px" TabIndex="3" AutoPostBack="True" OnSelectedIndexChanged="dplCourseworkName_SelectedIndexChanged">
 							</asp:DropDownList></td>
 					</tr>
 					<tr>
 						<td style="width: 267px; text-align: center;" >
 							&nbsp;按“浏览”选择要上传的文件（只允许RAR格式）</td>
 						<td style="width: 100px; text-align: left;">
-							<asp:FileUpload ID="fupFile" runat="server" Width="384px" TabIndex="4" /></td>
+							<asp:FileUpload ID="fupFile" runat="server" Width="200px" TabIndex="4" />&nbsp;<asp:Label ID="lblUploadInfo" runat="server" Text=""></asp:Label>
+						</td>
 					</tr>
 					<tr>
 						<td colspan="2" >
@@ -58,6 +59,6 @@
 				</table>
 			</div>
 		
-    </form>
+	</form>
 </body>
 </html>
