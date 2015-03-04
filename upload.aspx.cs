@@ -243,8 +243,9 @@ public partial class _Default : Page
 	{
 		if (ValidateInput("browsefile"))
 		{
-			Session["personalcategoryname"] = txtStudentID.Text.Trim() + "+" + txtStudentName.Text.Trim();
+			Session["snosname"] = txtStudentID.Text.Trim() + "+" + txtStudentName.Text.Trim();
 			Session["uploaddirectory"] = Server.MapPath("") + uploadDirectoryStr;
+			Cache["courseworklist"] = courseworkList;
 			Response.Redirect("viewfiles.aspx");
 		}
 	}
@@ -306,30 +307,7 @@ public partial class _Default : Page
 			throw new Exception(ex.Message);
 		}
 	}
-
-	public class CourseworkInfo
-	{
-		//ID
-
-		public string ID { get; set; }
-		//作业名称
-		public string Name { get; set; }
-
-		//作业发布时间
-		public DateTime PublishTime { get; set; }
-
-		//最长允许天数
-		public int DaysBeforeDeadline { get; set; }
-	}
-
-	public class StudentInfo
-	{
-		//学号
-		public string Sno { get; set; }
-
-		//姓名
-		public string Name { get; set; }
-	}
+	
 	protected void dplCourseworkName_SelectedIndexChanged(object sender, EventArgs e)
 	{
 		SetUploadEnabled();

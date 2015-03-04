@@ -41,7 +41,7 @@
 					</tr>
 					<tr>
 						<td style="width: 267px; text-align: center;" >
-							&nbsp;按“浏览”选择要上传的文件（只允许RAR格式）</td>
+							&nbsp;按“浏览”选择要上传的文件（支持任意格式的文件，多个文件或文件夹请打包为RAR格式）</td>
 						<td style="width: 100px; text-align: left;">
 							<asp:FileUpload ID="fupFile" runat="server" Width="200px" TabIndex="4" />&nbsp;<asp:Label ID="lblUploadInfo" runat="server" Text=""></asp:Label>
 						</td>
