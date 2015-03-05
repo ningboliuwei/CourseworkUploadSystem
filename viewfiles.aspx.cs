@@ -16,7 +16,7 @@ using System.IO;
 public partial class viewfiles : System.Web.UI.Page
 {
 	private ConfigManager _configManager = new ConfigManager();
-	private string _sno;
+	private static string sno = "124173105";
 
 	//关于提交的作业的信息
 	public class UploadInfo
@@ -48,6 +48,7 @@ public partial class viewfiles : System.Web.UI.Page
 		{
 			DataRow row = courseworkDataTable.NewRow();
 
+			row["作业ID"] = c.ID;
 			row["作业名称"] = c.Name;
 			courseworkDataTable.Rows.Add(row);
 		}
@@ -62,13 +63,14 @@ public partial class viewfiles : System.Web.UI.Page
 		uploadDataTable.Columns.Add("提交时间");
 		uploadDataTable.Columns.Add("全班排名（按提交时间）");
 
-
+		DataTable resultDataTable = new DataTable();
+		resultDataTable.Columns.Add("作业ID");
+		resultDataTable.Columns.Add("提交时间");
 
 
 		try
 		{
 			directoryNamesArray = Directory.GetDirectories(Server.MapPath(_configManager.UploadDirectory));
-			
 
 
 			for (int i = directoryNamesArray.Length - 1; i >= 0; i--)
@@ -83,7 +85,6 @@ public partial class viewfiles : System.Web.UI.Page
 
 					for (int j = fileNamesArray.Length - 1; j >= 0; j--)
 					{
-
 						string currentFileName = fileNamesArray[j].Substring(fileNamesArray[j].LastIndexOf("\\") + 1);
 						string[] paras = currentFileName.Split('+');
 
@@ -92,36 +93,40 @@ public partial class viewfiles : System.Web.UI.Page
 						string submittedTimeStr = paras[2];
 						string snoAndSnameStr = paras[3];
 
+						string sid = snoAndSnameStr.Substring(0, 9);
 
-						if (_configManager.CourseworkList.Exists(c => c.ID == id))
+
+						if (_configManager.CourseworkList.Exists(c => c.ID == id) && sid == sno)
 						{
-							CourseworkInfo courseworkInfo = _configManager.CourseworkList.Find(c => c.ID == id);
-
 							DataRow row = uploadDataTable.NewRow();
+							CourseworkInfo courseworkInfo = _configManager.CourseworkList.Find(c => c.ID == id);
 
 							row[0] = id;
 							row[1] = courseworkInfo.PublishTime.ToString("yyyy-MM-dd");
 							row[2] = courseworkInfo.Deadline.ToString("yyyy-MM-dd");
 							row[3] = "是";
 							//row[4] = submittedTimeStr;
-							
 
 							int year = Convert.ToInt32(submittedTimeStr.Substring(0, 4));
 							int month = Convert.ToInt32(submittedTimeStr.Substring(4, 2));
 							int day = Convert.ToInt32(submittedTimeStr.Substring(6, 2));
+
 							int hour = Convert.ToInt32(submittedTimeStr.Substring(8, 2));
 							int minute = Convert.ToInt32(submittedTimeStr.Substring(10, 2));
 							int second = Convert.ToInt32(submittedTimeStr.Substring(12, 2));
 
 
-							DateTime d = new DateTime(year,month,day,hour,minute,second);
+							DateTime d = new DateTime(year, month, day, hour, minute, second);
 
 							row[4] = d.ToString("yyyy-MM-dd HH:mm:ss");
 
 							uploadDataTable.Rows.Add(row);
 						}
 
-						
+
+
+
+
 						//UploadInfo uploadInfo = new UploadInfo()
 						//{
 						//CourseworkInfo coursework = courseworkList.Find(c => c.ID == id);
@@ -135,6 +140,9 @@ public partial class viewfiles : System.Web.UI.Page
 						//}
 
 
+
+
+
 						//string[] currentRow = new string[3];
 						//currentRow[0] = Convert.ToString(filesDataTable.Rows.Count + 1);
 						//currentRow[1] = fileNamesArray[j].Substring(currentFileName.LastIndexOf("\\") + 1);
@@ -143,13 +151,35 @@ public partial class viewfiles : System.Web.UI.Page
 					}
 				}
 			}
+
+			var resultTable = from coursework in courseworkDataTable.AsEnumerable()
+							  join upload in uploadDataTable.AsEnumerable()
+								  on coursework.Field<string>("作业ID") equals upload.Field<string>("作业ID")
+								  into nullTable
+							  from upload in nullTable.DefaultIfEmpty()
+							  select new
+							  {
+								  C1 = coursework.Field<string>("作业ID"),
+								  C2 = (upload != null) ? upload.Field<string>("提交时间") : ""
+							  };
+
+			foreach (var line in resultTable)
+			{
+				DataRow row = resultDataTable.NewRow();
+				row[0] = line.C1;
+				row[1] = line.C2;
+
+				resultDataTable.Rows.Add(row);
+			}
+
+
 		}
 		catch (Exception ex)
 		{
-			Response.Write(ex.ToString());
+			throw new Exception(ex.Message);
 		}
 
-		return uploadDataTable;
+		return resultDataTable;
 	}
 
 	public void BindData()
@@ -158,7 +188,7 @@ public partial class viewfiles : System.Web.UI.Page
 		this.EnableViewState = true;
 		this.MaintainScrollPositionOnPostBack = true;
 
-		DataTable dataTable = GetUploadData(_sno);
+		DataTable dataTable = GetUploadData(sno);
 
 
 		if (dataTable.Rows.Count == 0)
@@ -186,7 +216,7 @@ public partial class viewfiles : System.Web.UI.Page
 	protected void Page_Load(object sender, EventArgs e)
 	{
 		//string sno = Request.QueryString["sid"];
-		string sno = "124173105";
+
 		if (!Page.IsPostBack)
 		{
 			_configManager.LoadConfig(Server.MapPath("config.txt"));
