@@ -11,112 +11,34 @@ using System.Web.UI;
 
 public partial class _Default : Page
 {
-	private static string pageTitle = "";
-	private static string uploadDirectoryStr = "";
-	private static List<CourseworkInfo> courseworkList = new List<CourseworkInfo>();
-	private static List<StudentInfo> studentList = new List<StudentInfo>();
+	private static ConfigManager _configManager = new ConfigManager();
 
 	protected void Page_Load(object sender, EventArgs e)
 	{
 		MaintainScrollPositionOnPostBack = true;
 		EnableViewState = true;
-		Title = pageTitle;
 
 
-		if (Page.IsPostBack != true)
+		if (!Page.IsPostBack)
 		{
-			LoadConfig();
+			BindConfig();
+			SetUploadEnabled();
 		}
-		SetUploadEnabled();
 	}
 
-	private void LoadConfig()
+	private void BindConfig()
 	{
-		courseworkList.Clear();
-		studentList.Clear();
+		_configManager.LoadConfig(Server.MapPath("config.txt"));
+		lblTitle.Text = _configManager.PageTitle;
+		lblNotice.Text = _configManager.NoticeInfo;
 
-		StreamReader sr = null;
-
-		try
+		dplCourseworkName.Items.Clear();
+		foreach (CourseworkInfo c in _configManager.CourseworkList)
 		{
-			sr = new StreamReader(Server.MapPath("config.txt"), Encoding.Default);
-
-			string currentLine = "";
-
-			dplCourseworkName.Items.Clear();
-
-			while ((currentLine = sr.ReadLine()) != null)
-			{
-				if (currentLine == "[Title]")
-				{
-					lblTitle.Text = sr.ReadLine().Trim();
-					pageTitle = lblTitle.Text;
-				}
-				else if (currentLine == "[Notice Info]")
-				{
-					lblNotice.Text = sr.ReadLine().Trim();
-				}
-				else if (currentLine == "[Upload Directory]")
-				{
-					uploadDirectoryStr = sr.ReadLine().Trim();
-				}
-				else if (currentLine == "[Student List]")
-				{
-					string studentRecordStr = "";
-
-					while (studentRecordStr != "[Coursework List]")
-					{
-						studentRecordStr = sr.ReadLine().Trim();
-
-						if (studentRecordStr != "[Coursework List]")
-						{
-							studentList.Add(new StudentInfo { Sno = studentRecordStr.Split(',')[0], Name = studentRecordStr.Split(',')[1] });
-						}
-					}
-
-					string[] a = sr.ReadLine().Trim().Split(',');
-
-					CourseworkInfo latestCoursework = new CourseworkInfo
-					{
-						ID = a[0],
-						Name = a[1],
-						PublishTime = Convert.ToDateTime(a[2]),
-						DaysBeforeDeadline = Convert.ToInt32(a[3])
-					};
-					courseworkList.Add(latestCoursework);
-
-					dplCourseworkName.Items.Add(string.Format("【{0}】 {1} (发布时间:{2}, 期限(天):{3})", latestCoursework.ID,
-						latestCoursework.Name, latestCoursework.PublishTime.ToString("yyyy-MM-dd"), latestCoursework.DaysBeforeDeadline));
-				}
-				else
-				{
-					string[] a = currentLine.Split(',');
-
-					CourseworkInfo latestCoursework = new CourseworkInfo
-					{
-						ID = a[0],
-						Name = a[1],
-						PublishTime = Convert.ToDateTime(a[2]),
-						DaysBeforeDeadline = Convert.ToInt32(a[3])
-					};
-					courseworkList.Add(latestCoursework);
-					//dplCourseworkName.Items.Add(latestCoursework.Name);
-					dplCourseworkName.Items.Add(string.Format("【{0}】 {1} (发布时间:{2}, 期限(天):{3})", latestCoursework.ID,
-						latestCoursework.Name, latestCoursework.PublishTime.ToString("yyyy-MM-dd"), latestCoursework.DaysBeforeDeadline));
-				}
-			}
+			dplCourseworkName.Items.Add(string.Format("【{0}】 {1} (发布时间:{2}, 期限(天):{3})", c.ID,
+			c.Name, c.PublishTime.ToString("yyyy-MM-dd"), c.DaysBeforeDeadline));
 		}
-		catch (Exception ex)
-		{
-			lblNotice.Text = "加载本页面出错，请稍候再试。具体错误如下：<br>" + ex.Message;
-		}
-		finally
-		{
-			if (sr != null)
-			{
-				sr.Close();
-			}
-		}
+
 	}
 
 	protected void btnSubmit_Click(object sender, EventArgs e)
@@ -153,14 +75,13 @@ public partial class _Default : Page
 		{
 			string currentID = GetCourseworkID(dplCourseworkName.Text);
 
-			CourseworkInfo currentCoursework = courseworkList.Find(c => c.ID == currentID);
+			CourseworkInfo currentCoursework = _configManager.CourseworkList.Find(c => c.ID == currentID);
 
 
-
-			destFilePath = currentCoursework.ID + "+" + currentCoursework.Name + "+" + DateTime.Now.ToString("yyyyMMddHHmmss") + "+" + studentID + studentName +
+			destFilePath = currentCoursework.ID + "+" + currentCoursework.Name + "+" + DateTime.Now.ToString("yyyyMMddHHmmss") +
+						   "+" + studentID + studentName +
 						   "." + fileType;
-			destDirPath = Server.MapPath("") + uploadDirectoryStr + currentCoursework.ID + "+" + currentCoursework.Name + "\\";
-
+			destDirPath = Server.MapPath("") + _configManager.UploadDirectory + currentCoursework.ID + "+" + currentCoursework.Name + "\\";
 
 
 			if (Directory.Exists(destDirPath) == false)
@@ -180,7 +101,6 @@ public partial class _Default : Page
 		}
 		catch (Exception ex)
 		{
-			//lblNotice.Text = "上传文件失败，请稍候重试。";
 			lblNotice.Text = ex.Message;
 		}
 		finally
@@ -204,20 +124,27 @@ public partial class _Default : Page
 		string[] studentRecordArray;
 		bool foundStudentID = false;
 
-		for (int i = 0; i < studentList.Count; i++)
+		for (int i = 0; i < _configManager.StudentList.Count; i++)
 		{
-			//studentRecordArray = (string[])studentList[i];
-			//if (studentRecordArray[0] == studentID)
-			if (studentList[i].Sno == studentID)
-			{
-				//txtStudentName.Text = studentRecordArray[1];
-				txtStudentName.Text = studentList[i].Name;
-				foundStudentID = true;
-				break;
-			}
+			//if (_configManager.StudentList[i].Sno == studentID)
+			//{
+			//	txtStudentName.Text = _configManager.StudentList[i].Name;
+			//	foundStudentID = true;
+			//	break;
+			//}
+
+
+
 		}
 
-		if (foundStudentID == false)
+		StudentInfo student = _configManager.StudentList.Find(s => s.Sno == txtStudentID.Text.Trim());
+
+		if (student != null)
+		{
+			txtStudentName.Text = student.Name;
+		}
+
+		else
 		{
 			lblNotice.Text = "此学号未经授权，请检查是否输入了错误的学号，若确认无误，请与任课任课老师联系。";
 			txtStudentName.Text = "";
@@ -234,26 +161,30 @@ public partial class _Default : Page
 
 	protected void txtStudentID_TextChanged(object sender, EventArgs e)
 	{
-		LoadConfig();
+		BindConfig();
 		AutoGetStudentName();
 		SetUploadEnabled();
 	}
 
 	protected void lkbViewFiles_Click(object sender, EventArgs e)
 	{
-		if (ValidateInput("browsefile"))
-		{
-			Session["snosname"] = txtStudentID.Text.Trim() + "+" + txtStudentName.Text.Trim();
-			Session["uploaddirectory"] = Server.MapPath("") + uploadDirectoryStr;
-			Cache["courseworklist"] = courseworkList;
-			Response.Redirect("viewfiles.aspx");
-		}
+		string target = String.Format("viewfiles.aspx?sid={0}", txtStudentID.Text.Trim());
+		Response.Redirect(target);
+
+		//Response.Redirect("sina.aspx");
+		//if (ValidateInput("browsefile"))
+		//{
+		//	Session["snosname"] = txtStudentID.Text.Trim() + "+" + txtStudentName.Text.Trim();
+		//	Session["uploaddirectory"] = Server.MapPath("") + _configManager.UploadDirectory;
+		//	//Cache["courseworklist"] = _configManager.CourseworkList;
+		//	Response.Redirect(string.Format("viewfiles.aspx?sid={0}", txtStudentID.Text.Trim()));
+		//}
 	}
 
 	private bool ValidateInput(string type)
 	{
 		//string studentIDPattern = @"^\d{9}";
-		string filePathPattern = @"^(([a-zA-Z]:)|(\\{2}\w+)\$?)(\\(\w[\w ]*.*))+\.(rar|RAR)$";
+		//string filePathPattern = @"^(([a-zA-Z]:)|(\\{2}\w+)\$?)(\\(\w[\w ]*.*))+\.(rar|RAR)$";
 		bool ifValid = false;
 
 		try
@@ -307,35 +238,43 @@ public partial class _Default : Page
 			throw new Exception(ex.Message);
 		}
 	}
-	
+
 	protected void dplCourseworkName_SelectedIndexChanged(object sender, EventArgs e)
 	{
 		SetUploadEnabled();
 	}
 
-	//设定是否允许提交
+	/// <summary>
+	/// 设定是否允许提交
+	/// </summary>
 	private void SetUploadEnabled()
 	{
 		var id = GetCourseworkID(dplCourseworkName.Text);
 
 		//lblUploadInfo.Text = id;
 
-		CourseworkInfo coursework = courseworkList.Where(c => c.ID == id).ToList()[0];
-
+		CourseworkInfo coursework = _configManager.CourseworkList.Find(c => c.ID == id);
 		DateTime deadline = coursework.PublishTime.AddDays(coursework.DaysBeforeDeadline);
 
 		if (DateTime.Now > deadline.AddDays(1))
 		{
 			fupFile.Enabled = false;
+			btnSubmit.Enabled = false;
 			lblUploadInfo.Text = string.Format("该作业最后期限为{0}，已不允许提交。", deadline.ToString("yyyy-MM-dd"));
 		}
 		else
 		{
 			fupFile.Enabled = true;
+			btnSubmit.Enabled = false;
 			lblUploadInfo.Text = string.Format("该作业最后期限为{0}", deadline.ToString("yyyy-MM-dd"));
 		}
 	}
 
+	/// <summary>
+	/// 根据下拉菜单中的字符串获取作业ID
+	/// </summary>
+	/// <param name="s"></param>
+	/// <returns></returns>
 	private static string GetCourseworkID(string s)
 	{
 		int startPos = s.IndexOf("【");

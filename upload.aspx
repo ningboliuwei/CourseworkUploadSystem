@@ -54,7 +54,7 @@
 					</tr>
 					<tr>
 						<td colspan="2">
-							<asp:LinkButton ID="lkbViewFiles" runat="server" CausesValidation="False" OnClick="lkbViewFiles_Click" Enabled="False">查看我已经提交的所有文件</asp:LinkButton>（只需输入正确的学号即可）</td>
+							<asp:LinkButton ID="lkbViewFiles" runat="server" CausesValidation="False" OnClick="lkbViewFiles_Click" Enabled="False" >查看我已经提交的所有文件</asp:LinkButton>（只需输入正确的学号即可）</td>
 					</tr>
 				</table>
 			</div>

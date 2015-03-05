@@ -9,6 +9,7 @@
 <body background="image/bg8.gif">
     <form id="form1" runat="server">
 <div align =center>
+	<asp:Label runat="server" ID="lblInfo"></asp:Label></br>
 	<asp:HyperLink ID="HyperLink1" runat="server" NavigateUrl="upload.aspx">返回提交页面</asp:HyperLink><br />
 	<br />
 			<asp:GridView ID="gvFiles" runat="server" BackColor="White" BorderColor="#E7E7FF"

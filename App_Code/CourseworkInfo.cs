@@ -18,4 +18,9 @@ public class CourseworkInfo
 
 	//最长允许天数
 	public int DaysBeforeDeadline { get; set; }
+
+	public DateTime Deadline
+	{
+		get { return PublishTime.AddDays(DaysBeforeDeadline); }
+	}
 }
