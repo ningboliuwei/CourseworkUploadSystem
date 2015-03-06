@@ -16,33 +16,18 @@ using System.IO;
 public partial class viewfiles : System.Web.UI.Page
 {
 	private ConfigManager _configManager = new ConfigManager();
-	private static string sno = "124173105";
+	private static string _sno = "";
 
 	//关于提交的作业的信息
-	public class UploadInfo
-	{
-		public CourseworkInfo Coursework;
-		public bool IsSubmitted;
-		public DateTime SubmittedTime;
-		public string Rank;
-	}
-
-
 	public DataTable GetUploadData(string sno)
 	{
-		string[] fileNamesArray;
-		string[] directoryNamesArray;
-
-		DataTable courseworkDataTable = new DataTable();
+		//目前为止应提交的所有作业列表
+		var courseworkDataTable = new DataTable();
 
 		courseworkDataTable.Columns.Add("作业ID");
 		courseworkDataTable.Columns.Add("作业名称");
 		courseworkDataTable.Columns.Add("发布时间");
 		courseworkDataTable.Columns.Add("最后期限");
-		courseworkDataTable.Columns.Add("是否提交");
-		courseworkDataTable.Columns.Add("提交时间");
-		courseworkDataTable.Columns.Add("全班排名（按提交时间）");
-
 
 		foreach (CourseworkInfo c in _configManager.CourseworkList)
 		{
@@ -50,129 +35,107 @@ public partial class viewfiles : System.Web.UI.Page
 
 			row["作业ID"] = c.ID;
 			row["作业名称"] = c.Name;
+			row["发布时间"] = c.PublishTime;
+			row["最后期限"] = c.Deadline;
 			courseworkDataTable.Rows.Add(row);
 		}
 
-
-		DataTable uploadDataTable = new DataTable();
-
+		//该学生已提交的作业表
+		var uploadDataTable = new DataTable();
 		uploadDataTable.Columns.Add("作业ID");
-		uploadDataTable.Columns.Add("发布时间");
-		uploadDataTable.Columns.Add("最后期限");
-		uploadDataTable.Columns.Add("是否提交");
 		uploadDataTable.Columns.Add("提交时间");
-		uploadDataTable.Columns.Add("全班排名（按提交时间）");
 
-		DataTable resultDataTable = new DataTable();
-		resultDataTable.Columns.Add("作业ID");
+		var resultDataTable = new DataTable();
+
+		//resultDataTable.Columns.Add("作业ID");
+		resultDataTable.Columns.Add("作业名称");
+		resultDataTable.Columns.Add("发布时间");
+		resultDataTable.Columns.Add("最后期限");
+		resultDataTable.Columns.Add("是否截止");
 		resultDataTable.Columns.Add("提交时间");
+		resultDataTable.Columns.Add("全班排名（按提交时间）");
 
 
 		try
 		{
-			directoryNamesArray = Directory.GetDirectories(Server.MapPath(_configManager.UploadDirectory));
+			string[] directoryNamesArray = Directory.GetDirectories(Server.MapPath(_configManager.UploadDirectory));
 
 
 			for (int i = directoryNamesArray.Length - 1; i >= 0; i--)
 			{
-				string tempDirPath = "";
+				string tempDirPath = directoryNamesArray[i] + "\\";
 
-				tempDirPath = directoryNamesArray[i];
-				if (Directory.Exists(tempDirPath + "\\"))
+				//若作业文件夹存在
+				if (Directory.Exists(tempDirPath))
 				{
-					tempDirPath = tempDirPath + "\\";
-					fileNamesArray = Directory.GetFiles(tempDirPath);
+					//得到该文件夹下所有文件
+					string[] fileNamesArray = Directory.GetFiles(tempDirPath);
 
 					for (int j = fileNamesArray.Length - 1; j >= 0; j--)
 					{
-						string currentFileName = fileNamesArray[j].Substring(fileNamesArray[j].LastIndexOf("\\") + 1);
+						string currentFileName =
+							fileNamesArray[j].Substring(fileNamesArray[j].LastIndexOf("\\", System.StringComparison.Ordinal) + 1);
 						string[] paras = currentFileName.Split('+');
 
 						string id = paras[0];
-						string courseworkName = paras[1];
 						string submittedTimeStr = paras[2];
-						string snoAndSnameStr = paras[3];
+						//得到学号
+						string sid = paras[3].Substring(0, 9);
 
-						string sid = snoAndSnameStr.Substring(0, 9);
-
-
+						//指定学号与作业的提交文件是否存在
 						if (_configManager.CourseworkList.Exists(c => c.ID == id) && sid == sno)
 						{
 							DataRow row = uploadDataTable.NewRow();
 							CourseworkInfo courseworkInfo = _configManager.CourseworkList.Find(c => c.ID == id);
 
-							row[0] = id;
-							row[1] = courseworkInfo.PublishTime.ToString("yyyy-MM-dd");
-							row[2] = courseworkInfo.Deadline.ToString("yyyy-MM-dd");
-							row[3] = "是";
-							//row[4] = submittedTimeStr;
-
 							int year = Convert.ToInt32(submittedTimeStr.Substring(0, 4));
 							int month = Convert.ToInt32(submittedTimeStr.Substring(4, 2));
 							int day = Convert.ToInt32(submittedTimeStr.Substring(6, 2));
-
 							int hour = Convert.ToInt32(submittedTimeStr.Substring(8, 2));
 							int minute = Convert.ToInt32(submittedTimeStr.Substring(10, 2));
 							int second = Convert.ToInt32(submittedTimeStr.Substring(12, 2));
 
+							var d = new DateTime(year, month, day, hour, minute, second);
 
-							DateTime d = new DateTime(year, month, day, hour, minute, second);
-
-							row[4] = d.ToString("yyyy-MM-dd HH:mm:ss");
+							row["作业ID"] = id;
+							row["提交时间"] = d.ToString("yyyy-MM-dd HH:mm:ss");
 
 							uploadDataTable.Rows.Add(row);
 						}
-
-
-
-
-
-						//UploadInfo uploadInfo = new UploadInfo()
-						//{
-						//CourseworkInfo coursework = courseworkList.Find(c => c.ID == id);
-
-						//uploadList.Add(new UploadInfo()
-						//{
-						//	Coursework = coursework,
-
-						//});
-
-						//}
-
-
-
-
-
-						//string[] currentRow = new string[3];
-						//currentRow[0] = Convert.ToString(filesDataTable.Rows.Count + 1);
-						//currentRow[1] = fileNamesArray[j].Substring(currentFileName.LastIndexOf("\\") + 1);
-						//currentRow[2] = directoryNamesArray[i].Substring(directoryNamesArray[i].LastIndexOf("\\") + 1);
-						//filesDataTable.Rows.Add(currentRow);
 					}
 				}
 			}
 
 			var resultTable = from coursework in courseworkDataTable.AsEnumerable()
+							  let deadline = Convert.ToDateTime(coursework.Field<string>("最后期限"))
 							  join upload in uploadDataTable.AsEnumerable()
 								  on coursework.Field<string>("作业ID") equals upload.Field<string>("作业ID")
 								  into nullTable
 							  from upload in nullTable.DefaultIfEmpty()
 							  select new
 							  {
-								  C1 = coursework.Field<string>("作业ID"),
-								  C2 = (upload != null) ? upload.Field<string>("提交时间") : ""
+								  //C0 = coursework.Field<string>("作业ID"),
+								  CourseworkName = coursework.Field<string>("作业名称"),
+								  PublishTime = Convert.ToDateTime(coursework.Field<string>("发布时间")).ToString("yyyy-MM-dd"),
+								  Deadline = deadline.ToString("yyyy-MM-dd"),
+								  SubmitTime = (upload != null) ? Convert.ToDateTime(upload.Field<string>("提交时间")).ToString("yyyy-MM-dd HH:mm:ss") : "未提交",
+								  IsOverdued = (DateTime.Now >= deadline.AddDays(1)) ? "已截止" : "未截止",
+								  Rank = 1
 							  };
 
 			foreach (var line in resultTable)
 			{
 				DataRow row = resultDataTable.NewRow();
-				row[0] = line.C1;
-				row[1] = line.C2;
 
+				//row[0] = line.C0;
+				row["作业名称"] = line.CourseworkName;
+				row["发布时间"] = line.PublishTime;
+				row["最后期限"] = line.Deadline;
+				row["是否截止"] = line.IsOverdued;
+				row["提交时间"] = line.SubmitTime;
+				row["全班排名（按提交时间）"] = line.Rank;
 				resultDataTable.Rows.Add(row);
 			}
-
-
 		}
 		catch (Exception ex)
 		{
@@ -188,7 +151,7 @@ public partial class viewfiles : System.Web.UI.Page
 		this.EnableViewState = true;
 		this.MaintainScrollPositionOnPostBack = true;
 
-		DataTable dataTable = GetUploadData(sno);
+		DataTable dataTable = GetUploadData(_sno);
 
 
 		if (dataTable.Rows.Count == 0)
@@ -215,12 +178,13 @@ public partial class viewfiles : System.Web.UI.Page
 
 	protected void Page_Load(object sender, EventArgs e)
 	{
-		//string sno = Request.QueryString["sid"];
+
 
 		if (!Page.IsPostBack)
 		{
+			_sno = Request.QueryString["sid"];
 			_configManager.LoadConfig(Server.MapPath("config.txt"));
-			if (SnoIsValid(sno))
+			if (SnoIsValid(_sno))
 			{
 				BindData();
 			}
