@@ -16,30 +16,6 @@ public partial class viewfiles : Page
 	//关于提交的作业的信息
 	public DataTable GetUploadData(string sno)
 	{
-		var courseworkDataTable = GetCourseworkDataTable();
-		var uploadFileDataTable = GetUploadFileDataTable();
-
-		var resultTable = from coursework in courseworkDataTable.AsEnumerable()
-						  let deadline = Convert.ToDateTime(coursework.Field<string>("最后期限"))
-						  join uploadfile in uploadFileDataTable.AsEnumerable()
-							  on coursework.Field<string>("作业ID") equals uploadfile.Field<string>("作业ID")
-							  into resulttable
-						  from uploadfile in resulttable.DefaultIfEmpty()
-						  orderby uploadfile.Field<string>("提交时间") ascending
-						  select new
-						  {
-							  Sno = uploadfile.Field<string>("学号"),
-							  Sname = uploadfile.Field<string>("姓名"),
-							  CourseworkName = coursework.Field<string>("作业名称"),
-							  PublishTime = Convert.ToDateTime(coursework.Field<string>("发布时间")).ToString("yyyy-MM-dd"),
-							  Deadline = deadline.ToString("yyyy-MM-dd"), //最后期限
-							  SubmitTime =
-								  (uploadfile != null) ? Convert.ToDateTime(uploadfile.Field<string>("提交时间")).ToString("yyyy-MM-dd HH:mm:ss") : "未提交",
-							  IsOverdued = (DateTime.Now >= deadline.AddDays(1)) ? "已截止" : "未截止",
-							  Rank = "N/A"
-						  };
-
-
 		var resultDataTable = new DataTable();
 		resultDataTable.Columns.Add("学号");
 		resultDataTable.Columns.Add("姓名");
@@ -50,19 +26,61 @@ public partial class viewfiles : Page
 		resultDataTable.Columns.Add("提交时间");
 		resultDataTable.Columns.Add("该文件提交排名");
 
-		foreach (var line in resultTable)
-		{
-			DataRow row = resultDataTable.NewRow();
+		DataRow defaultValue = resultDataTable.NewRow();
 
-			row["学号"] = line.Sno;
-			row["姓名"] = line.Sname;
-			row["作业名称"] = line.CourseworkName;
-			row["发布时间"] = line.PublishTime;
-			row["最后期限"] = line.Deadline;
-			row["是否截止"] = line.IsOverdued;
-			row["提交时间"] = line.SubmitTime;
-			row["该文件提交排名"] = line.Rank;
-			resultDataTable.Rows.Add(row);
+		var courseworkDataTable = GetCourseworkDataTable();
+		var uploadFileDataTable = GetUploadFileDataTable();
+
+		//将所有作业按照学生分组
+		var groups = from uploadFile in uploadFileDataTable.AsEnumerable()
+					 group uploadFile by uploadFile.Field<string>("学号")
+						 into studentGroup
+						 select studentGroup;
+
+		//遍历所有组，将每一组与完整作业列表进行左连接
+		foreach (var g in groups)
+		{
+			var resultTable = from coursework in courseworkDataTable.AsEnumerable()
+							  let deadline = Convert.ToDateTime(coursework.Field<string>("最后期限"))
+							  join c in g
+								  on coursework.Field<string>("作业ID") equals c.Field<string>("作业ID")
+								  into resulttable
+							  from result in resulttable.DefaultIfEmpty(defaultValue)
+							  orderby coursework.Field<string>("作业ID") ascending
+							  select new
+							  {
+								  Sno = result.Field<string>("学号"),
+								  Sname = result.Field<string>("姓名"),
+								  CourseworkName = coursework.Field<string>("作业名称"),
+								  PublishTime =
+									  (coursework.Field<string>("发布时间") != null)
+										  ? Convert.ToDateTime(coursework.Field<string>("发布时间")).ToString("yyyy-MM-dd")
+										  : "N/A",
+								  Deadline = deadline.ToString("yyyy-MM-dd"), //最后期限
+								  SubmitTime =
+									  (result.Field<string>("提交时间") != null)
+										  ? Convert.ToDateTime(result.Field<string>("提交时间")).ToString("yyyy-MM-dd HH:mm:ss")
+										  : "未提交",
+								  IsOverdued = (DateTime.Now >= deadline.AddDays(1)) ? "已截止" : "未截止",
+								  Rank = "N/A"
+							  }
+				;
+
+
+			foreach (var line in resultTable)
+			{
+				DataRow row = resultDataTable.NewRow();
+
+				row["学号"] = line.Sno;
+				row["姓名"] = line.Sname;
+				row["作业名称"] = line.CourseworkName;
+				row["发布时间"] = line.PublishTime;
+				row["最后期限"] = line.Deadline;
+				row["是否截止"] = line.IsOverdued;
+				row["提交时间"] = line.SubmitTime;
+				row["该文件提交排名"] = line.Rank;
+				resultDataTable.Rows.Add(row);
+			}
 		}
 
 		return resultDataTable;
