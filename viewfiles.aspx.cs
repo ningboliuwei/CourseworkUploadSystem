@@ -1,10 +1,13 @@
 ﻿#region
 
 using System;
+using System.Collections.Generic;
 using System.Data;
+using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Web.UI;
+using System.Web.UI.WebControls;
 
 #endregion
 
@@ -19,6 +22,7 @@ public partial class viewfiles : Page
 		var resultDataTable = new DataTable();
 		resultDataTable.Columns.Add("学号");
 		resultDataTable.Columns.Add("姓名");
+		resultDataTable.Columns.Add("作业ID");
 		resultDataTable.Columns.Add("作业名称");
 		resultDataTable.Columns.Add("发布时间");
 		resultDataTable.Columns.Add("最后期限");
@@ -33,37 +37,40 @@ public partial class viewfiles : Page
 
 		//将所有作业按照学生分组
 		var groups = from uploadFile in uploadFileDataTable.AsEnumerable()
-					 group uploadFile by uploadFile.Field<string>("学号")
-						 into studentGroup
-						 select studentGroup;
+			where uploadFile.Field<string>("学号") == sno
+			//只选择指定学号的“组”
+			group uploadFile by uploadFile.Field<string>("学号")
+			into studentGroup
+			select studentGroup;
 
 		//遍历所有组，将每一组与完整作业列表进行左连接
 		foreach (var g in groups)
 		{
 			var resultTable = from coursework in courseworkDataTable.AsEnumerable()
-							  let deadline = Convert.ToDateTime(coursework.Field<string>("最后期限"))
-							  join c in g
-								  on coursework.Field<string>("作业ID") equals c.Field<string>("作业ID")
-								  into resulttable
-							  from result in resulttable.DefaultIfEmpty(defaultValue)
-							  orderby coursework.Field<string>("作业ID") ascending
-							  select new
-							  {
-								  Sno = result.Field<string>("学号"),
-								  Sname = result.Field<string>("姓名"),
-								  CourseworkName = coursework.Field<string>("作业名称"),
-								  PublishTime =
-									  (coursework.Field<string>("发布时间") != null)
-										  ? Convert.ToDateTime(coursework.Field<string>("发布时间")).ToString("yyyy-MM-dd")
-										  : "N/A",
-								  Deadline = deadline.ToString("yyyy-MM-dd"), //最后期限
-								  SubmitTime =
-									  (result.Field<string>("提交时间") != null)
-										  ? Convert.ToDateTime(result.Field<string>("提交时间")).ToString("yyyy-MM-dd HH:mm:ss")
-										  : "未提交",
-								  IsOverdued = (DateTime.Now >= deadline.AddDays(1)) ? "已截止" : "未截止",
-								  Rank = "N/A"
-							  }
+				let deadline = Convert.ToDateTime(coursework.Field<string>("最后期限"))
+				join c in g
+					on coursework.Field<string>("作业ID") equals c.Field<string>("作业ID")
+					into resulttable
+				from result in resulttable.DefaultIfEmpty(defaultValue)
+				orderby coursework.Field<string>("作业ID") ascending
+				select new
+				{
+					Sno = result.Field<string>("学号"),
+					Sname = result.Field<string>("姓名"),
+					CourseworkID = coursework.Field<string>("作业ID"),
+					CourseworkName = coursework.Field<string>("作业名称"),
+					PublishTime =
+						(coursework.Field<string>("发布时间") != null)
+							? Convert.ToDateTime(coursework.Field<string>("发布时间")).ToString("yyyy-MM-dd")
+							: "N/A",
+					Deadline = deadline.ToString("yyyy-MM-dd"), //最后期限
+					SubmitTime =
+						(result.Field<string>("提交时间") != null)
+							? Convert.ToDateTime(result.Field<string>("提交时间")).ToString("yyyy-MM-dd HH:mm:ss")
+							: "未提交",
+					IsOverdued = (DateTime.Now >= deadline.AddDays(1)) ? "已截止" : "未截止",
+					Rank = "N/A"
+				}
 				;
 
 
@@ -73,6 +80,7 @@ public partial class viewfiles : Page
 
 				row["学号"] = line.Sno;
 				row["姓名"] = line.Sname;
+				row["作业ID"] = line.CourseworkID;
 				row["作业名称"] = line.CourseworkName;
 				row["发布时间"] = line.PublishTime;
 				row["最后期限"] = line.Deadline;
@@ -235,5 +243,54 @@ public partial class viewfiles : Page
 		{
 			gvFiles.Rows[i].Cells[0].Text = (i + 1).ToString();
 		}
+	}
+
+	private void ChangeColor(int keyIndex, GridView grid)
+	{
+		List<Color> colorList = new List<Color>()
+		{
+			Color.DarkRed,
+			Color.OrangeRed,
+			Color.Orange,
+			Color.Yellow,
+			Color.LightYellow,
+			Color.GreenYellow,
+			Color.ForestGreen,
+			Color.CadetBlue,
+			Color.DodgerBlue,
+			Color.MediumPurple
+		};
+
+//		colorList.Add(Color.LightBlue);
+//		colorList.Add(Color.LightCoral);
+//		colorList.Add(Color.LightPink);
+//		colorList.Add(Color.LightGreen);
+//		colorList.Add(Color.LightYellow);
+//		colorList.Add(Color.LightSlateGray);
+//		colorList.Add(Color.LightSeaGreen);
+
+
+		int colorIndex = 0;
+		grid.Rows[0].BackColor = colorList[colorIndex];
+		for (int i = 1; i < grid.Rows.Count; i++)
+		{
+			if (grid.Rows[i].Cells[keyIndex].Text != grid.Rows[i - 1].Cells[keyIndex].Text)
+			{
+				colorIndex++;
+
+				if (colorIndex >= colorList.Count)
+				{
+					colorIndex = 0;
+				}
+			}
+
+			grid.Rows[i].BackColor = colorList[colorIndex];
+			;
+		}
+	}
+
+	protected void gvFiles_DataBound1(object sender, EventArgs e)
+	{
+		ChangeColor(3, gvFiles);
 	}
 }

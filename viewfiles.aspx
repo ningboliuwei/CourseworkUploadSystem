@@ -13,7 +13,7 @@
 	<asp:HyperLink ID="HyperLink1" runat="server" NavigateUrl="upload.aspx">返回提交页面</asp:HyperLink><br />
 	<br />
 			<asp:GridView ID="gvFiles" runat="server" BackColor="White" BorderColor="#E7E7FF"
-			BorderStyle="None" BorderWidth="1px" CellPadding="3" Width="80%" style="font-size: small; font-family: Verdana; background-image: none; background-color: transparent;" EnableModelValidation="True"  >
+			BorderStyle="None" BorderWidth="1px" CellPadding="3" Width="80%" style="font-size: small; font-family: Verdana; background-image: none; background-color: transparent;" EnableModelValidation="True" OnDataBound="gvFiles_DataBound1"  >
 			<FooterStyle BackColor="#B5C7DE" ForeColor="#4A3C8C" />
 			<RowStyle BackColor="#E7E7FF" ForeColor="#4A3C8C"  HorizontalAlign =center VerticalAlign =Middle/>
 			<SelectedRowStyle BackColor="#738A9C" Font-Bold="True" ForeColor="#F7F7F7" />
