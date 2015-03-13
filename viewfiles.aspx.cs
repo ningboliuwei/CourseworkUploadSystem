@@ -37,40 +37,40 @@ public partial class viewfiles : Page
 
 		//将所有作业按照学生分组
 		var groups = from uploadFile in uploadFileDataTable.AsEnumerable()
-			where uploadFile.Field<string>("学号") == sno
-			//只选择指定学号的“组”
-			group uploadFile by uploadFile.Field<string>("学号")
-			into studentGroup
-			select studentGroup;
+					 //					 where uploadFile.Field<string>("学号") == sno
+					 //只选择指定学号的“组”
+					 group uploadFile by uploadFile.Field<string>("学号")
+						 into studentGroup
+						 select studentGroup;
 
 		//遍历所有组，将每一组与完整作业列表进行左连接
 		foreach (var g in groups)
 		{
 			var resultTable = from coursework in courseworkDataTable.AsEnumerable()
-				let deadline = Convert.ToDateTime(coursework.Field<string>("最后期限"))
-				join c in g
-					on coursework.Field<string>("作业ID") equals c.Field<string>("作业ID")
-					into resulttable
-				from result in resulttable.DefaultIfEmpty(defaultValue)
-				orderby coursework.Field<string>("作业ID") ascending
-				select new
-				{
-					Sno = result.Field<string>("学号"),
-					Sname = result.Field<string>("姓名"),
-					CourseworkID = coursework.Field<string>("作业ID"),
-					CourseworkName = coursework.Field<string>("作业名称"),
-					PublishTime =
-						(coursework.Field<string>("发布时间") != null)
-							? Convert.ToDateTime(coursework.Field<string>("发布时间")).ToString("yyyy-MM-dd")
-							: "N/A",
-					Deadline = deadline.ToString("yyyy-MM-dd"), //最后期限
-					SubmitTime =
-						(result.Field<string>("提交时间") != null)
-							? Convert.ToDateTime(result.Field<string>("提交时间")).ToString("yyyy-MM-dd HH:mm:ss")
-							: "未提交",
-					IsOverdued = (DateTime.Now >= deadline.AddDays(1)) ? "已截止" : "未截止",
-					Rank = "N/A"
-				}
+							  let deadline = Convert.ToDateTime(coursework.Field<string>("最后期限"))
+							  join c in g
+								  on coursework.Field<string>("作业ID") equals c.Field<string>("作业ID")
+								  into resulttable
+							  from result in resulttable.DefaultIfEmpty(defaultValue)
+							  orderby coursework.Field<string>("作业ID") ascending
+							  select new
+							  {
+								  Sno = result.Field<string>("学号"),
+								  Sname = result.Field<string>("姓名"),
+								  CourseworkID = coursework.Field<string>("作业ID"),
+								  CourseworkName = coursework.Field<string>("作业名称"),
+								  PublishTime =
+									  (coursework.Field<string>("发布时间") != null)
+										  ? Convert.ToDateTime(coursework.Field<string>("发布时间")).ToString("yyyy-MM-dd")
+										  : "N/A",
+								  Deadline = deadline.ToString("yyyy-MM-dd"), //最后期限
+								  SubmitTime =
+									  (result.Field<string>("提交时间") != null)
+										  ? Convert.ToDateTime(result.Field<string>("提交时间")).ToString("yyyy-MM-dd HH:mm:ss")
+										  : "未提交",
+								  IsOverdued = (DateTime.Now >= deadline.AddDays(1)) ? "已截止" : "未截止",
+								  Rank = result.Field<string>("该文件提交排名")
+							  }
 				;
 
 
@@ -104,6 +104,7 @@ public partial class viewfiles : Page
 		uploadFileDataTable.Columns.Add("姓名");
 		uploadFileDataTable.Columns.Add("作业ID");
 		uploadFileDataTable.Columns.Add("提交时间");
+		uploadFileDataTable.Columns.Add("该文件提交排名");
 
 		try
 		{
@@ -150,6 +151,7 @@ public partial class viewfiles : Page
 							row["姓名"] = sname;
 							row["作业ID"] = id;
 							row["提交时间"] = d.ToString("yyyy-MM-dd HH:mm:ss");
+							row["该文件提交排名"] = string.Format("{0} / {1}", j + 1, fileNamesArray.Length);
 
 							uploadFileDataTable.Rows.Add(row);
 						}
@@ -261,13 +263,13 @@ public partial class viewfiles : Page
 			Color.MediumPurple
 		};
 
-//		colorList.Add(Color.LightBlue);
-//		colorList.Add(Color.LightCoral);
-//		colorList.Add(Color.LightPink);
-//		colorList.Add(Color.LightGreen);
-//		colorList.Add(Color.LightYellow);
-//		colorList.Add(Color.LightSlateGray);
-//		colorList.Add(Color.LightSeaGreen);
+		//		colorList.Add(Color.LightBlue);
+		//		colorList.Add(Color.LightCoral);
+		//		colorList.Add(Color.LightPink);
+		//		colorList.Add(Color.LightGreen);
+		//		colorList.Add(Color.LightYellow);
+		//		colorList.Add(Color.LightSlateGray);
+		//		colorList.Add(Color.LightSeaGreen);
 
 
 		int colorIndex = 0;
