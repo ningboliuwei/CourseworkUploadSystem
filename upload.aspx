@@ -8,18 +8,18 @@
 <script language="javascript" type="text/javascript">
 </script>
 </head>
-<body background="image/bg8.gif">
+<body background="image/bg2.jpg">
 	<form id="form1" runat="server">
-		<div style="text-align: center; font-size: small; color: black; font-family: Verdana; background-attachment: fixed; background-image: url(image/bg8.gif);" >
+		<div style="text-align: center; font-size: small; color: black;  background-attachment: fixed; " >
 				<table style="border-right: maroon thin solid; border-top: maroon thin solid; border-left: maroon thin solid; border-bottom: maroon thin solid; background-attachment: fixed; height: 90%; font-size: 14px;" id="TABLE1"  border = "1" align="center" width="700" cellspacing="0" >
 					<tr>
 						<td colspan="2" style="height: 100px; text-align: center;"  valign="middle" width="100%" >
-							<asp:Label ID="lblTitle" runat="server" style="font-weight: bold; font-size: x-large; color: red; font-family: Verdana" Width="100%" Height="100%"></asp:Label></td>
+							<asp:Label ID="lblTitle" runat="server" style="font-weight: bold; font-size: x-large; color: red;" Width="100%" Height="100%"></asp:Label></td>
 					</tr>
 					<tr>
 						<td colspan="2" style="text-align: center;" valign="middle" width="100%" >
-							<asp:Label ID="lblNotice" runat="server" style="font-size: medium; color: blue; font-family: Verdana; font-weight: bold;" Height="100%" Width="100%"></asp:Label></td>
-					</tr>
+							<asp:Label ID="lblNotice" runat="server" style="font-size: medium; color: blue;font-weight: bold;" Height="100%" Width="100%"></asp:Label></td>
+					</tr>backgrou
 					<tr>
 						<td c="" style="width: 267px; text-align: center">
 							&nbsp;学号（输入学号后按回车，姓名即会自动出现）</td>

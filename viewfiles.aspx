@@ -6,7 +6,7 @@
 <head runat="server">
     <title>无标题页</title>
 </head>
-<body background="image/bg8.gif">
+<body background="image/bg2.jpg">
     <form id="form1" runat="server">
 <div align =center>
 	<asp:Label runat="server" ID="lblInfo"></asp:Label></br>
