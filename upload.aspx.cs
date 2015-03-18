@@ -81,7 +81,7 @@ public partial class _Default : Page
 			destFilePath = currentCoursework.ID + "+" + currentCoursework.Name + "+" + DateTime.Now.ToString("yyyyMMddHHmmss") +
 						   "+" + studentID + studentName +
 						   "." + fileType;
-			destDirPath = Server.MapPath("") + _configManager.UploadDirectory + currentCoursework.ID + "+" + currentCoursework.Name + "\\";
+			destDirPath = Server.MapPath("") + "\\" + _configManager.UploadDirectory + currentCoursework.ID + "+" + currentCoursework.Name + "\\";
 
 
 			if (Directory.Exists(destDirPath) == false)
@@ -265,7 +265,7 @@ public partial class _Default : Page
 		else
 		{
 			fupFile.Enabled = true;
-			btnSubmit.Enabled = false;
+			btnSubmit.Enabled = true;
 			lblUploadInfo.Text = string.Format("该作业最后期限为{0}", deadline.ToString("yyyy-MM-dd"));
 		}
 	}
